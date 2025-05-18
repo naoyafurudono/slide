@@ -19,7 +19,7 @@
 
 ---
 
-## Chapter 1-4 はすでに記事に書いてしまったので後回し
+# Chapter 1-4 はすでに記事に書いてしまったので後回し
 
 気が向いたらスライドに起こします。スライドの方が主張の構造を練ることになりやすいと感じているのでした。
 
@@ -27,7 +27,7 @@ https://dev.nfurudono.com/posts/read-a-philosophy-of-softfare-design/
 
 ---
 
-## Chapter 5. Information Hiding (and Leakage)
+# Chapter 5. Information Hiding (and Leakage)
 
 - Chapter 4 では深いモジュール (deep module) が望ましいことを主張した。
 - この章は、モジュールを深くするためのテクニックの一つとして情報隠蔽を説明する
