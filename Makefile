@@ -34,6 +34,9 @@ list: ## Show all available chapters
 		echo " - $${basename}"; \
 	done
 
+deploy: ## Open deploy page of speakerdeck
+	open https://speakerdeck.com/new
+
 help: ## Show this help message with all available commands
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z0-9_%-]+:.*## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "  make %-15s %s\n", $$1, $$2}'
