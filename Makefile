@@ -34,6 +34,19 @@ list: ## Show all available chapters
 		echo " - $${basename}"; \
 	done
 
+new: ## Create a new slide from template (e.g., make new NAME=my-presentation)
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is required. Usage: make new NAME=my-presentation"; \
+		exit 1; \
+	fi
+	@if [ -f "$(SRCDIR)/$(NAME).md" ]; then \
+		echo "Error: $(SRCDIR)/$(NAME).md already exists"; \
+		exit 1; \
+	fi
+	@cp template/slide-template.md $(SRCDIR)/$(NAME).md
+	@echo "Created new slide: $(SRCDIR)/$(NAME).md"
+	@echo "Edit the file and then run: make build-$(NAME)"
+
 deploy: ## Open deploy page of speakerdeck
 	open https://speakerdeck.com/new
 
@@ -41,4 +54,4 @@ help: ## Show this help message with all available commands
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z0-9_%-]+:.*## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "  make %-15s %s\n", $$1, $$2}'
 
-.PHONY: all build-% watch watch-% clean list help $(OUTDIR)
+.PHONY: all build-% watch watch-% clean list new deploy help $(OUTDIR)
