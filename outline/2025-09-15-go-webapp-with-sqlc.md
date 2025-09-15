@@ -75,7 +75,13 @@ RDBのテーブルは特に言語機能とかを使ってモジュール化し�
 
 # 結果としてどうなるか
 
-DBスキーマってモジュール化できない + sqlc によってなんでもクエリが書けることにより、モジュール化が関数の単位でしかされない（統一されたデータ構造がほとんど存在しない）アプリケーションが出来上がる
+- DBスキーマってモジュール化できない
+- sqlc によってなんでもクエリが書ける
+- sqlcで書かれたクエリは一つのGoの関数になる
+
+トランザクションスクリプトの辛さはあるだろうか
+
+ことにより、モジュール化が関数の単位でしかされない（統一されたデータ構造がほとんど存在しない）アプリケーションが出来上がる
 
 メンテナンスがめちゃくちゃ大変。
 
@@ -168,7 +174,6 @@ create table revenueRecognitions (
 
 ```java
 class Gateway {
-
   public ResultSet findRecognitionsFor(long contractID, MfDate asof) throws SQLException {
       PreparedStatement stmt = db.prepareStatement(findRecognitionsStatement);
       stmt.setLong(1, contractID);
@@ -181,5 +186,60 @@ class Gateway {
         " FROM revenueRecognitions " +
         " WHERE contract = ? AND recognizedOn <= ?";
   private Connection db;
+  
+  public ResultSet findContract (long contractID) throws SQLException {
+      PreparedStatement stmt = db.prepareStatement(findContractStatement);
+      stmt.setLong(1, contractID);
+      ResultSet result = stmt.executeQuery();
+      return result;
+  }
+  private static final String findContractStatement =
+    "SELECT * " +
+    " FROM contracts c, products p " +
+    " WHERE ID = ? AND c.product = p.ID";
 }
+
+class RecognitionService {
+  public Money recognizedRevenue(long contractNumber, MfDate asOf) {
+      Money result = Money.dollars(0);
+      try {
+        ResultSet rs = db.findRecognitionsFor(contractNumber, asOf);
+        while (rs.next()) {
+           result = result.add(Money.dollars(rs.getBigDecimal("amount")));
+        }
+        return result;
+      } catch (SQLException e) {
+        throw new ApplicationException (e);
+      }
+  }
+
+  public void calculateRevenueRecognitions(long contractNumber) {
+    try {
+        ResultSet contracts = db.findContract(contractNumber);
+        contracts.next();
+        Money totalRevenue = Money.dollars(contracts.getBigDecimal("revenue"));
+        MfDate recognitionDate = new MfDate(contracts.getDate("dateSigned"));
+        String type = contracts.getString("type");
+        if (type.equals("S")){
+            Money[] allocation = totalRevenue.allocate(3);
+            db.insertRecognition(contractNumber, allocation[0], recognitionDate);
+            db.insertRecognition(contractNumber, allocation[1], recognitionDate.addDays(60));
+            db.insertRecognition(contractNumber, allocation[2], recognitionDate.addDays(90));
+        } else if (type.equals("W")){
+            db.insertRecognition(contractNumber, totalRevenue, recognitionDate);
+        } else if (type.equals("D")) {
+            Money[] allocation = totalRevenue.allocate(3);
+            db.insertRecognition(contractNumber, allocation[0], recognitionDate);
+            db.insertRecognition(contractNumber, allocation[1], recognitionDate.addDays(30));
+            db.insertRecognition(contractNumber, allocation[2], recognitionDate.addDays(60));
+        }
+    } catch (SQLException e) {
+      throw new ApplicationException (e);
+    }
+  }
+}
+
+
+
+
 ```
